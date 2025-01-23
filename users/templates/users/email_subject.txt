@@ -1,0 +1,1 @@
+Activation email on {{site_name}}
