@@ -1,13 +1,14 @@
 import jwt
 
 from django.conf import settings
+from django.contrib.auth import authenticate
 from django.contrib.sites.shortcuts import get_current_site
 from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
 from django.http import HttpRequest
 from rest_framework import serializers
 from rest_framework_simplejwt.settings import api_settings
-from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.tokens import RefreshToken, TokenError, TokenBackendError
 
 from .models import CustomUser
 
@@ -21,7 +22,7 @@ class UserCreationSerializer(serializers.ModelSerializer):
 
     def save(self, **kwargs):
         user = CustomUser.objects.create_user(**self.validated_data)
-        email_context = self.get_email_context(user, **kwargs)
+        email_context = self.get_email_context(user=user, **kwargs)
 
         subject = render_to_string(
             "users/email_subject.txt",
@@ -38,7 +39,7 @@ class UserCreationSerializer(serializers.ModelSerializer):
         return user
 
     def get_email_context(
-        self, user, request=None, domain_override=None, use_https=False, **kwargs
+        self, user, request=None, domain_override=None, use_https=False
     ):
         if not domain_override:
             current_site = get_current_site(request)
@@ -73,3 +74,41 @@ class EmailVerificationSerializer(serializers.Serializer):
         except:
             raise serializers.ValidationError("Token is invalid")
         return attrs
+
+
+class LoginSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField()
+    password = serializers.CharField(min_length=8, write_only=True)
+
+    class Meta:
+        model = CustomUser
+        fields = ["email", "password", "tokens"]
+
+    def validate(self, attrs):
+        email = attrs["email"]
+        password = attrs["password"]
+
+        user: CustomUser = authenticate(email=email, password=password)
+        if not user:
+            raise serializers.ValidationError("Incorrect credentials provided")
+        if not user.is_verified:
+            raise serializers.ValidationError("Email is yet to be verified.")
+        return {
+            "email": email,
+            "tokens": user.tokens,
+        }
+
+
+class LogoutSerializer(serializers.Serializer):
+    refresh = serializers.CharField(min_length=8, write_only=True)
+
+    class Meta:
+        fields = ["refresh"]
+
+    def validate_refresh(self, value):
+        try:
+            return str(RefreshToken(value))
+        except (TokenBackendError, TokenError):
+            raise serializers.ValidationError(
+                "Refresh token is invalid or already blacklisted."
+            )

@@ -4,6 +4,7 @@ from django.contrib.auth.models import (
     AbstractUser,
     PermissionsMixin,
 )
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from .managers import CustomUserManager
 
@@ -25,3 +26,8 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return self.email
+
+    @property
+    def tokens(self) -> dict[str, str]:
+        tk = RefreshToken.for_user(self)
+        return {"access": str(tk.access_token), "refresh": str(tk)}
