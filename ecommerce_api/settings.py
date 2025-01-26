@@ -40,7 +40,8 @@ INSTALLED_APPS = [
     # third party
     "rest_framework",
     "rest_framework_simplejwt",
-    # "drf_spectacular",
+    "rest_framework_simplejwt.token_blacklist",
+    "drf_spectacular",
     # locals
     "users",
 ]
@@ -136,3 +137,21 @@ AUTH_USER_MODEL = "users.CustomUser"
 # EMAIL
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 FROM_EMAIL = "muby@email.com"
+
+
+# REST FRAMEWORK
+
+REST_FRAMEWORK = {
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    )
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Ecommerce API",
+    "DESCRIPTION": "Rest API For Ecommerce Store",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    # OTHER SETTINGS
+}
