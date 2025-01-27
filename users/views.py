@@ -19,6 +19,7 @@ from .serializers import (
     EmailVerificationSerializer,
     LoginSerializer,
     LogoutSerializer,
+    VerificationEmailRequestSerializer,
 )
 
 # Create your views here.
@@ -75,4 +76,17 @@ class LogoutAPIView(generics.GenericAPIView):
 
         refresh = serializer.data.get("token")
         RefreshToken(refresh).blacklist()
+        return Response(status=status.HTTP_200_OK)
+
+
+class ResendVerificationEmail(generics.GenericAPIView):
+
+    serializer_class = VerificationEmailRequestSerializer
+
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+
+        serializer.is_valid(raise_exception=True)
+        serializer.save(request=request, use_https=request.is_secure())
+
         return Response(status=status.HTTP_200_OK)

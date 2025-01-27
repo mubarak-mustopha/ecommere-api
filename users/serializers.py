@@ -11,6 +11,7 @@ from rest_framework_simplejwt.settings import api_settings
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError, TokenBackendError
 
 from .models import CustomUser
+from .utils import VerificationEmailSender
 
 
 class UserCreationSerializer(serializers.ModelSerializer):
@@ -22,43 +23,13 @@ class UserCreationSerializer(serializers.ModelSerializer):
 
     def save(self, **kwargs):
         user = CustomUser.objects.create_user(**self.validated_data)
-        email_context = self.get_email_context(user=user, **kwargs)
-
-        subject = render_to_string(
-            "users/email_subject.txt",
-            context={"site_name": email_context.pop("site_name", None)},
-        )
-        message = render_to_string(
-            "registration/verification_email.html", context=email_context
-        )
-        email = EmailMessage(
-            subject, message, from_email=settings.FROM_EMAIL, to=[user.email]
-        )
-        email.send()
+        VerificationEmailSender(**kwargs).send(user)
 
         return user
 
-    def get_email_context(
-        self, user, request=None, domain_override=None, use_https=False
-    ):
-        if not domain_override:
-            current_site = get_current_site(request)
-            domain = current_site.domain
-            site_name = current_site.name
-        else:
-            domain = site_name = domain_override
-
-        return {
-            "email": user.email,
-            "protocol": "https" if use_https else "http",
-            "domain": domain,
-            "site_name": site_name,
-            "token": str(RefreshToken.for_user(user).access_token),
-        }
-
 
 class EmailVerificationSerializer(serializers.Serializer):
-    token = serializers.CharField(min_length=8)
+    token = serializers.CharField(min_length=8, write_only=True)
 
     def validate(self, attrs):
         token = attrs.get("token")
@@ -74,6 +45,25 @@ class EmailVerificationSerializer(serializers.Serializer):
         except:
             raise serializers.ValidationError("Token is invalid")
         return attrs
+
+
+class VerificationEmailRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField(write_only=True)
+
+    class Meta:
+        fields = ["email"]
+
+    def save(self, **kwargs):
+        email = self.validated_data.get("email")
+
+        try:
+            user = CustomUser.objects.get(email=email)
+        except CustomUser.DoesNotExist:
+            raise serializers.ValidationError(
+                f"No user associated with the email `{email}`"
+            )
+
+        VerificationEmailSender(**kwargs).send(user)
 
 
 class LoginSerializer(serializers.ModelSerializer):
