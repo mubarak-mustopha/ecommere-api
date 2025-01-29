@@ -1,7 +1,10 @@
 from django.conf import settings
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.contrib.sites.shortcuts import get_current_site
 from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
 from rest_framework_simplejwt.tokens import RefreshToken
 
 
@@ -10,7 +13,7 @@ class NotImplemented(BaseException):
 
 
 class EmailSender:
-    subject_template = ""
+    subject_template = "users/email_subject.txt"
     body_template = ""
 
     def __init__(self, request=None, domain_override=None, use_https=False):
@@ -41,7 +44,11 @@ class EmailSender:
         context = self.get_email_context(user)
 
         subject = render_to_string(
-            self.subject_template, context={"site_name": context.pop("site_name", "")}
+            self.subject_template,
+            context={
+                "site_name": context.pop("site_name", ""),
+                "title": context.pop("title", ""),
+            },
         )
         message = render_to_string(self.body_template, context=context)
         email = EmailMessage(
@@ -53,8 +60,27 @@ class EmailSender:
 
 
 class VerificationEmailSender(EmailSender):
-    subject_template = "users/email_subject.txt"
     body_template = "registration/verification_email.html"
 
     def get_user_token(self, user):
         return str(RefreshToken.for_user(user).access_token)
+
+    def get_email_context(self, user):
+        context = super().get_email_context(user)
+        context["title"] = "Activation email"
+
+        return context
+
+
+class PasswordResetEmailSender(EmailSender):
+    body_template = "registration/password_reset_email.html"
+
+    def get_user_token(self, user):
+        return PasswordResetTokenGenerator().make_token(user)
+
+    def get_email_context(self, user):
+        context = super().get_email_context(user)
+        context["title"] = "Password reset"
+        context["uidb64"] = urlsafe_base64_encode(force_bytes(user.id))
+
+        return context

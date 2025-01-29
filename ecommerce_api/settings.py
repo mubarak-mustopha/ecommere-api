@@ -143,9 +143,10 @@ FROM_EMAIL = "muby@email.com"
 
 REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
-    )
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ),
+    "NON_FIELD_ERRORS_KEY": "errors",
 }
 
 SPECTACULAR_SETTINGS = {
@@ -155,3 +156,7 @@ SPECTACULAR_SETTINGS = {
     "SERVE_INCLUDE_SCHEMA": False,
     # OTHER SETTINGS
 }
+
+
+# FRONTEND URL
+FRONTEND_URL = "https://example.com"
