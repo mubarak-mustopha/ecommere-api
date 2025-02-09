@@ -22,8 +22,7 @@ class ColorVariant(models.Model):
         return self.value
 
     def save(self, **kwargs):
-        if not self.slug:
-            self.slug = slugify(self.value)
+        self.slug = slugify(self.value)
 
         return super().save(**kwargs)
 
@@ -36,8 +35,7 @@ class SizeVariant(models.Model):
         return self.value
 
     def save(self, **kwargs):
-        if not self.slug:
-            self.slug = slugify(self.value)
+        self.slug = slugify(self.value)
 
         return super().save(**kwargs)
 
