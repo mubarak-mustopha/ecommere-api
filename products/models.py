@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils.text import slugify
 
 
 # Create your models here.
@@ -15,16 +16,30 @@ class Category(models.Model):
 
 class ColorVariant(models.Model):
     value = models.CharField(max_length=50)
+    slug = models.SlugField(blank=True, unique=True)
 
     def __str__(self):
         return self.value
+
+    def save(self, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.value)
+
+        return super().save(**kwargs)
 
 
 class SizeVariant(models.Model):
     value = models.CharField(max_length=5)
+    slug = models.SlugField(blank=True, unique=True)
 
     def __str__(self):
         return self.value
+
+    def save(self, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.value)
+
+        return super().save(**kwargs)
 
 
 class Product(models.Model):
