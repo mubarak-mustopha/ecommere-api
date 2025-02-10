@@ -25,6 +25,7 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("users/", include("users.urls")),
-    path("shema/", SpectacularAPIView.as_view(), name="schema"),
+    path("schema/", SpectacularAPIView.as_view(), name="schema"),
     path("", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
+    path("", include("products.urls")),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
